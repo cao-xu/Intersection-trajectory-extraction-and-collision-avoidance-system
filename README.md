@@ -24,7 +24,7 @@
 
 [PyCharm如何使用Qt Designer](https://blog.csdn.net/stone0823/article/details/104101130)
 
-## 系统启动
+## 系统启动aaa
 
 在配置好环境后，运行:
 
