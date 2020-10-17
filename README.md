@@ -44,3 +44,5 @@ python controller.py
     3.开始提取
     
     4.查看结果
+    
+    
