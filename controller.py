@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QSize, QUrl
 import View
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from traj_ext.visualization.run_visualizer import run_visualize_traj
+from traj_ext.visualization.run_visualizer import run_visualize_traj, run_visualize_conflict_and_traj
 import argparse
 from PyQt5.QtGui import QPixmap, QImage
 from PIL import Image
@@ -203,11 +203,15 @@ class MainCode(QWidget, View.Ui_MainWindow): # 继承界面类，实现界面、
             TRAJ_NOT_MERGED_CSV = TRAJ_INSPECT_VEHICLES_DIR + '/' + NAME + "_traj_not_merged.csv"
             SHRINK_ZONE = 1
             MIN_LENGTH = 6
+            CONFLICTS_DIR = OUTPUT_DIR + '/detected_conflict'
+            CONFLICTS_FILE = CONFLICTS_DIR + '/' + "conflict_detect.csv"
+
 
             # 按照函数参数格式，将想设置的参数编写为 命名空间
             parser = argparse.ArgumentParser(description='Visualize the final trajectories')
             parser.add_argument('-traj', default='')
             parser.add_argument('-image_dir', type=str, default='')
+            parser.add_argument('-conflicts', type=str, default='')
             parser.add_argument('-camera_street', type=str, default='')
             parser.add_argument('-camera_sat', type=str, default='')
             parser.add_argument('-camera_sat_img', type=str, default='')
@@ -220,6 +224,8 @@ class MainCode(QWidget, View.Ui_MainWindow): # 继承界面类，实现界面、
             parser.add_argument('-no_label', action='store_true')
             parser.add_argument('-export', type=bool, default=False)
             args = parser.parse_args(['-traj', TRAJ_INSPECT_VEHICLES, \
+                                      # 冲突点文件
+                                      '-conflicts', CONFLICTS_FILE, \
                                       '-image_dir', SOURCE_FOLDER + "/img", \
                                       '-camera_street', SOURCE_FOLDER + '/' + CAMERA_STREET, \
                                       '-camera_sat', SOURCE_FOLDER + '/' + CAMERA_SAT, \
@@ -236,7 +242,9 @@ class MainCode(QWidget, View.Ui_MainWindow): # 继承界面类，实现界面、
             # 让“开始”按钮和文本框 disable
             self.disableEverything()
             # 再调用 run_visualize_traj（args）实现可视化
-            run_visualize_traj(args, self.Thread)# 要定义线程,否则不能显示
+            # run_visualize_traj(args, self.Thread)# 要定义线程,否则不能显示
+            # 同时画 冲突点和 轨迹
+            run_visualize_conflict_and_traj(args, self.Thread)
 
         else:
             QMessageBox.information(self, "提示", self.tr("请输入完整信息！"))
