@@ -1,7 +1,13 @@
 # Intersection trajectory extraction and collision avoidance system
 **本项目实现基于视频数据的轨迹提取与重构、轨迹冲突预测、预警发布**
 
+**轨迹提取**
 ![操作展示](pic.gif)
+
+
+**（侧向）冲突检测**
+![侧向冲突检测](conflict_detect_display.gif)
+
 
 
 ## Task List
@@ -10,7 +16,9 @@
     - [x] 相机标定
     - [x] 轨迹提取、平滑
 
-- [ ] 轨迹冲突预测
+- [ ] 轨迹冲突检测
+    - [x] 侧向与车头碰撞检测(2020.11.24完成)
+    - [ ] 车头追尾碰撞检测
 
 - [ ] 预警发布
 
