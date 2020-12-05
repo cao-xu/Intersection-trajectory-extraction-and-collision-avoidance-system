@@ -7,7 +7,7 @@ import sys
 
 import winsound
 
-from traj_ext.conflict_detection.conflict import Conflict
+from conflict_detection.conflict import Conflict
 from traj_ext.postprocess_track import trajutil
 from traj_ext.postprocess_track.trajectory import Trajectory, TrajPoint
 from traj_ext.utils import mathutil
@@ -565,7 +565,19 @@ def two_vehicle_conflict_detect(traj_i, traj_j, time_ms):
 
             return conflict_point, TTC, conflict_type
 
+# 2020.12.05 基于分轴定理的碰撞检测（预测）
+def SAT_based_two_vehicle_conflicts_detect(predict_time_length, time_step, traj_i, traj_j, time_ms):
 
+    # 对于每个时间步长，计算A、B两车的位置坐标点
+
+    # 判断是否发生碰撞，若发生，则保存时间点
+
+    # 否则，继续判断
+
+    # 根据发生碰撞的时间，计算A、B两车的中心坐标点，若在整个时间长度内不存在冲突，则返回函数开头默认的冲突点，即设置坐标为A（0,0）B（0,0）
+
+
+    pass
 
 
 def run_conflict_detection(config):
@@ -617,15 +629,22 @@ def run_conflict_detection(config):
                             if not (traj_j.get_point_at_timestamp(time_ms) is None):
 
 
-                                # 修改冲突检测的函数
+                                # 修改冲突检测的函数，基于分离轴定理预测冲突（侧向、追尾、车头与车头）
 
-                                conflict_point, TTC, conflict_type = two_vehicle_conflict_detect(traj_i, traj_j, time_ms)
+                                # conflict_point, TTC, conflict_type = two_vehicle_conflict_detect(traj_i, traj_j, time_ms)
+                                TTC, A_point, B_point = SAT_based_two_vehicle_conflicts_detect(5.0, \
+                                                                                               0.01, \
+                                                                                               traj_i, \
+                                                                                               traj_j, \
+                                                                                               time_ms)
 
                                 # 若存在冲突（TTC 不为 9999）, 保存当前冲突到 list
-                                if TTC != 9999 and conflict_point.x != 0 and conflict_point.y != 0 :
+                                if TTC != 9999 and A_point.x != 0 and A_point.y != 0 and B_point.x != 0 and B_point.y != 0:
                                     # 把当前的冲突数据 写入 Conflict 类
-                                    tmp_data = Conflict(time_ms, conflict_point.x, conflict_point.y,\
-                                                           TTC, traj_i.get_id(), traj_j.get_id(), conflict_type)
+
+                                    # Conflict类重新设计成员变量
+                                    tmp_data = Conflict(time_ms, A_point.x, A_point.y, B_point.x, B_point.y, \
+                                                           TTC, traj_i.get_id(), traj_j.get_id())
                                     # 将冲突写入数组
                                     conflict_list.append(tmp_data)
                                     # 滴滴发出声音，报警有冲突
@@ -633,13 +652,13 @@ def run_conflict_detection(config):
                                     time.sleep(0.5)
                                     winsound.Beep(500, 500)
                                     print(time_ms,'ms时，轨迹',traj_i.get_id(),'与轨迹',traj_j.get_id(),\
-                                          '存在冲突！冲突类型为' + conflict_type + '\n\n\n')
+                                          '存在冲突！' + '\n\n\n')
 
         # 完成所有时刻检测
         if frame_index == (len(list_times_ms)-1):
             name_prefix = 'conflict_detect'
             # 完成所有时刻冲突检测后保存冲突list到csv
-            Conflict.write_conflict_panda_csv(output_dir, name_prefix, conflict_list, list_times_ms)
+            Conflict.write_conflict_panda_csv(output_dir, name_prefix, conflict_list)
             print('冲突检测完成！请查看文件')
             break
         # 当前时刻的冲突检测完成， 进行下一个时刻的检测

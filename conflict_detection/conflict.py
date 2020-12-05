@@ -27,23 +27,25 @@ class Conflict(object):
     # 静态变量
     id = 0
 
-    def __init__(self, time_ms, x, y, TTC, track_id_A, track_id_B, conflict_type):
+    def __init__(self, time_ms, point_A_x, point_A_y, point_B_x, point_B_y, TTC, track_id_A, track_id_B):
         Conflict.id += 1
         self._id = Conflict.id
         self._time_ms = time_ms
-        self._x = x
-        self._y = y
+        self._point_A_x = point_A_x
+        self._point_A_y = point_A_y
+        self._point_B_x = point_B_x
+        self._point_B_y = point_B_y
         self._TTC = TTC
         self._track_id_A = track_id_A
         self._track_id_B = track_id_B
-        self._conflict_type = conflict_type
+        # self._conflict_type = conflict_type
         self._color = (int(np.random.randint(0, 255, 1)[0]), int(np.random.randint(0, 255, 1)[0]), int(np.random.randint(0, 255, 1)[0]))
         # self._per_ms_conflict_list = per_ms_conflict_list
 
     # to do：
     # 模仿Trajectory类写 “写入csv文件的函数” 用于保存冲突使用
     @classmethod
-    def write_conflict_panda_csv(cls, folder_path, name_prefix, conflict_list, list_times_ms):
+    def write_conflict_panda_csv(cls, folder_path, name_prefix, conflict_list):
         """Write conflicts into a single csv file
 
         Args:
@@ -65,33 +67,36 @@ class Conflict(object):
 
         dict_conflict_pd = collections.OrderedDict.fromkeys(['conflict_id', \
                                                          'timestamp_ms', \
-                                                         'x', \
-                                                         'y', \
+                                                         'point_A_x', \
+                                                         'point_A_y', \
+                                                         'point_B_x', \
+                                                         'point_B_y', \
                                                          'TTC', \
                                                          'track_id_A', \
-                                                         'track_id_B', \
-                                                         'conflict_type'])
+                                                         'track_id_B'])
 
         dict_conflict_pd['conflict_id'] = []
         dict_conflict_pd['timestamp_ms'] = []
-        dict_conflict_pd['x'] = []
-        dict_conflict_pd['y'] = []
+        dict_conflict_pd['point_A_x'] = []
+        dict_conflict_pd['point_A_y'] = []
+        dict_conflict_pd['point_B_x'] = []
+        dict_conflict_pd['point_B_y'] = []
         dict_conflict_pd['TTC'] = []
         dict_conflict_pd['track_id_A'] = []
         dict_conflict_pd['track_id_B'] = []
-        dict_conflict_pd['conflict_type'] = []
 
         for conflict in conflict_list:
 
             # Define name:
             dict_conflict_pd['conflict_id'].append(conflict._id)
             dict_conflict_pd['timestamp_ms'].append(conflict._time_ms)
-            dict_conflict_pd['x'].append(conflict._x)
-            dict_conflict_pd['y'].append(conflict._y)
+            dict_conflict_pd['point_A_x'].append(conflict._point_A_x)
+            dict_conflict_pd['point_A_y'].append(conflict._point_A_y)
+            dict_conflict_pd['point_B_x'].append(conflict._point_B_x)
+            dict_conflict_pd['point_B_y'].append(conflict._point_B_y)
             dict_conflict_pd['TTC'].append(conflict._TTC)
             dict_conflict_pd['track_id_A'].append(conflict._track_id_A)
             dict_conflict_pd['track_id_B'].append(conflict._track_id_B)
-            dict_conflict_pd['conflict_type'].append(conflict._conflict_type)
 
         # Create dataframe
         df_conflict = pd.DataFrame(dict_conflict_pd)
@@ -127,16 +132,17 @@ class Conflict(object):
 
             for index, row in rows.iterrows():
 
-                conflict_id = row['conflict_id']
+                # conflict_id = row['conflict_id']
                 time_ms = row['timestamp_ms']
-                x = row['x']
-                y = row['y']
+                point_A_x = row['point_A_x']
+                point_A_y = row['point_A_y']
+                point_B_x = row['point_B_x']
+                point_B_y = row['point_B_y']
                 TTC = row['TTC']
                 track_id_A = row['track_id_A']
                 track_id_B = row['track_id_B']
-                conflict_type = row['conflict_type']
 
-                conflict_point = Conflict(time_ms, x, y, TTC, track_id_A, track_id_B, conflict_type)
+                conflict_point = Conflict(time_ms, point_A_x, point_A_y, point_B_x, point_B_y, TTC, track_id_A, track_id_B)
                 per_ms_conflict_list.append(conflict_point)
                 # per_ms_conflict_list.add_conflict_point(time_ms, x, y, TTC, track_id_A, track_id_B)
 
@@ -154,13 +160,21 @@ class Conflict(object):
 
         return self._time_ms
 
-    def get_x(self):
+    def get_point_A_x(self):
 
-        return self._x
+        return self._point_A_x
 
-    def get_y(self):
+    def get_point_A_y(self):
 
-        return self._y
+        return self._point_A_y
+
+    def get_point_B_x(self):
+
+        return self._point_B_x
+
+    def get_point_B_y(self):
+
+        return self._point_B_y
 
     def get_TTC(self):
 
@@ -187,17 +201,30 @@ class Conflict(object):
         return self._conflict_type
 
     # 模仿Trajectory的display_on_image_02time_ms（）写一个 画冲突点的函数
-    def display_conflict_point_on_image(self, time_ms, cam_model, image_current_conflict, traj_list, TTC_label = True, conflict_type_label = True):
+    def display_conflict_point_on_image(self, time_ms, cam_model, image_current_conflict, traj_list, TTC_label = True, \
+                                        is_hd_map = False):
 
         # 判断图像存在 并且 TTC不为负值，才继续进行下面的画图
         if not (image_current_conflict is None) and (self._TTC > 0):
 
             # 依次画 冲突点 、 写TTC 、 画连线
             # 画冲突点
-            pt_conflict = cam_model.project_points(np.array([(self._x, self._y, 0.0)])) # 将 平面坐标 转换为 原始镜头坐标
-            pt_conflict = (int(pt_conflict[0]), int(pt_conflict[1]))
+            pt_conflict_A = cam_model.project_points(np.array([(self._point_A_x, self._point_A_y, 0.0)])) # 将 平面坐标 转换为 原始镜头坐标
+            pt_conflict_A = (int(pt_conflict_A[0]), int(pt_conflict_A[1]))
+            pt_conflict_B = cam_model.project_points(np.array([(self._point_B_x, self._point_B_y, 0.0)]))
+            pt_conflict_B = (int(pt_conflict_B[0]), int(pt_conflict_B[1]))
             # 冲突点 标为 红色 大实心圆
-            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict, 8, (0,0,255), -1)
+            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict_A, 8, (0,0,255), -1)
+            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict_B, 8, (0, 0, 255), -1)
+            # 将3D边界框画在hd_map视角图中
+
+            # 添加判断 is_hd_map_view, if is_hd_map_view: do 画3D box（参考原visual中的方法）
+            # 待完成
+            if is_hd_map:
+                pass
+                # 将 四个点 计算投影点pt_X(X = 1234)，画在图像上的是投影后的点
+
+
 
             # 两辆车与 冲突点的连线
             # 获取两条轨迹，并获取当前时刻的轨迹点
@@ -216,8 +243,8 @@ class Conflict(object):
             pt_pix_B = cam_model.project_points(np.array([(traj_point_B.x, traj_point_B.y, 0.0)]))
             pt_pix_B = (int(pt_pix_B[0]), int(pt_pix_B[1]))
             # 画的是 红色 宽度为2像素的 实线
-            image_current_conflict = cv2.line(image_current_conflict, pt_pix_A, pt_conflict, (0, 0, 255), 2)
-            image_current_conflict = cv2.line(image_current_conflict, pt_pix_B, pt_conflict, (0, 0, 255), 2)
+            image_current_conflict = cv2.line(image_current_conflict, pt_pix_A, pt_conflict_A, (0, 0, 255), 2)
+            image_current_conflict = cv2.line(image_current_conflict, pt_pix_B, pt_conflict_B, (0, 0, 255), 2)
             # 两辆相关车辆用 蓝色 的 实线 相连
             image_current_conflict = cv2.line(image_current_conflict, pt_pix_A, pt_pix_B, (255, 0, 0), 2)
 
@@ -228,22 +255,6 @@ class Conflict(object):
                 image_current_conflict = cv2.putText(image_current_conflict, 'TTC:'+ str(round(float(self._TTC), 2)) + 's',\
                                                      pt_conflict, cv2.FONT_HERSHEY_PLAIN, 2.5, (255, 0, 0), 2)
 
-            if conflict_type_label:
-
-                conflict_type = ''
-                # 设置位置在TCC下面一行 （y坐标下移10个像素点）
-                pt_text = cam_model.project_points(np.array([(self._x + 2, self._y - 0.5, 0.0)]))
-                pt_text = (int(pt_text[0]), int(pt_text[1]))
-                # 根据类型字符串，换成中文，
-                if self._conflict_type == 'lateral_conflict':
-                    conflict_type = 'lateral conflict'
-                if self._conflict_type == 'A3_B12_rear_conflict':
-                    conflict_type = 'rear-end conflict A3B12'
-                if self._conflict_type == 'B2_A34_rear_conflict':
-                    conflict_type = 'rear-end conflict B2A34'
-
-                image_current_conflict = cv2.putText(image_current_conflict, conflict_type, pt_text, \
-                                                     cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0), 1)
 
         return image_current_conflict
 
