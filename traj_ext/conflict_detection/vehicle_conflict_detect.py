@@ -7,8 +7,7 @@ import sys
 
 import winsound
 
-from conflict_detection.SAT import *
-from conflict_detection.conflict import Conflict
+from traj_ext.conflict_detection.conflict import Conflict
 from traj_ext.postprocess_track import trajutil
 from traj_ext.postprocess_track.trajectory import Trajectory, TrajPoint
 from traj_ext.utils import mathutil
@@ -566,117 +565,8 @@ def two_vehicle_conflict_detect(traj_i, traj_j, time_ms):
 
             return conflict_point, TTC, conflict_type
 
-def vehicle_bounding_point(point_x, point_y, length, width, vx, vy):
 
-    # 计算4个角点的坐标，返回轨迹点TrajPoint类的对象
 
-    # 计算中点坐标，带入计算车头、车尾的两点坐标
-    center_point = TrajPoint(0, point_x, point_y, vx, vy, 0)
-
-    front_mid_point = compute_mid_coordinate(length, center_point, 'front')
-    rear_mid_point = compute_mid_coordinate(length, center_point, 'rear')
-
-    point_1 = TrajPoint(0, 0, 0, vx, vy, 0)
-    point_2 = TrajPoint(0, 0, 0, vx, vy, 0)
-    point_3 = TrajPoint(0, 0, 0, vx, vy, 0)
-    point_4 = TrajPoint(0, 0, 0, vx, vy, 0)
-
-    point_1.x, point_1.y, point_2.x, point_2.y = get_vehicle_front_or_rear_two_point(front_mid_point.x, front_mid_point.y,\
-                                                                                     width / 2, \
-                                                                                     center_point.x, center_point.y, \
-                                                                                     math.sqrt((length / 2) ** 2 + (width / 2) ** 2))
-    point_3.x, point_3.y, point_4.x, point_4.y = get_vehicle_front_or_rear_two_point(rear_mid_point.x,
-                                                                                     rear_mid_point.y, \
-                                                                                     width / 2, \
-                                                                                     center_point.x, center_point.y, \
-                                                                                     math.sqrt((length / 2) ** 2 + (width / 2) ** 2))
-    # 判断在速度方向左边的分别是 2点 与 3点，右边的是 1点、4点
-    ray_end_point_x = center_point.x + center_point.vx * 1
-    ray_end_point_y = center_point.y + center_point.vy * 1
-    if not is_point_left_of_ray(point_2.x, point_2.y, center_point.x, center_point.y, \
-                                ray_end_point_x, ray_end_point_y):
-        tmp_x = point_2.x
-        tmp_y = point_2.y
-        point_2.x = point_1.x
-        point_2.y = point_1.y
-        point_1.x = tmp_x
-        point_1.y = tmp_y
-
-    if not is_point_left_of_ray(point_3.x, point_3.y, center_point.x, center_point.y, \
-                                ray_end_point_x, ray_end_point_y):
-        tmp_x = point_3.x
-        tmp_y = point_3.y
-        point_3.x = point_4.x
-        point_3.y = point_4.y
-        point_4.x = tmp_x
-        point_4.y = tmp_y
-
-    # 返回 1、2、3、4四个TrajPoint类的对象
-    return point_1, point_2, point_3, point_4
-
-# 2020.12.05 基于分轴定理的碰撞检测（预测）
-def SAT_based_two_vehicle_conflicts_detect(predict_time_length, time_step, traj_i, traj_j, time_ms):
-    '''
-
-    :param predict_time_length:
-    :param time_step:
-    :param traj_i:
-    :param traj_j:
-    :param time_ms:
-    :return: TTC、A_point, B_point
-    '''
-
-    # 获取两车当前帧的轨迹点数据
-    # 获得的两个轨迹点属性(time_ms, x, y, vx, vy, psi_rad)
-    traj_point_A = traj_i.get_point_at_timestamp(time_ms)  # 某一时刻
-    A_length, A_width, A_height = traj_i.get_size()
-    # print(traj_point_A.x, traj_point_A.y, traj_point_A.vx, traj_point_A.vy)
-    traj_point_B = traj_j.get_point_at_timestamp(time_ms)
-    B_length, B_width, B_height = traj_j.get_size()
-    # print(traj_point_B.x, traj_point_B.y, traj_point_B.vx, traj_point_B.vy)
-
-    # 设置返回值，发生碰撞时的A、B点
-    conflict_point_A = TrajPoint(0, 0, 0, traj_point_A.vx, traj_point_A.vy, 0)
-    conflict_point_B = TrajPoint(0, 0, 0, traj_point_B.vx, traj_point_B.vy, 0)
-    TTC = 9999
-
-    # 对于每个时间步长，计算A、B两车的位置坐标点
-    predict_time = time_step
-    while predict_time <= predict_time_length:
-
-        # 获取四个角点坐标，逆时针设置A、B车的边界点
-        point_A_x = traj_point_A.x + traj_point_A.vx * predict_time
-        point_A_y = traj_point_A.y + traj_point_A.vy * predict_time
-        point_B_x = traj_point_B.x + traj_point_B.vx * predict_time
-        point_B_y = traj_point_B.y + traj_point_B.vy * predict_time
-        # 1、2、3、4是逆时针设置的四个轨迹点
-        point_A_1, point_A_2, point_A_3, point_A_4 = vehicle_bounding_point(point_A_x, point_A_y, \
-                                                                            A_length, A_width, \
-                                                                            traj_point_A.vx, traj_point_A.vy)
-        point_B_1, point_B_2, point_B_3, point_B_4 = vehicle_bounding_point(point_B_x, point_B_y,\
-                                                                            B_length, B_width, \
-                                                                            traj_point_B.vx, traj_point_B.vy)
-        rectangle_A = [(point_A_1.x, point_A_1.y), (point_A_2.x, point_A_2.y), \
-                       (point_A_3.x, point_A_3.y), (point_A_4.x, point_A_4.y)]
-        rectangle_B = [(point_B_1.x, point_B_1.y), (point_B_2.x, point_B_2.y), \
-                       (point_B_3.x, point_B_3.y), (point_B_4.x, point_B_4.y)]
-
-        # 判断是否发生碰撞，若发生，则保存时间点
-        if separating_axis_theorem(rectangle_A, rectangle_B):
-
-            TTC = predict_time
-            # 根据发生碰撞的时间，计算A、B两车的中心坐标点，若在整个时间长度内不存在冲突，则返回函数开头默认的冲突点，即设置坐标为A（0,0）B（0,0）
-            conflict_point_A.x = point_A_x
-            conflict_point_A.y = point_A_y
-            conflict_point_B.x = point_B_x
-            conflict_point_B.y = point_B_y
-
-            return TTC, conflict_point_A, conflict_point_B
-
-        predict_time += time_step
-
-    # 若在整个时段内未检测到冲突，则返回默认值
-    return TTC, conflict_point_A, conflict_point_B
 
 def run_conflict_detection(config):
 
@@ -712,7 +602,6 @@ def run_conflict_detection(config):
         # Get Time ms
         frame_index = mathutil.clip(frame_index, 0, len(list_times_ms) - 1)  # 剪辑返回的是帧序，保证帧序在0到最大之间
         time_ms = list_times_ms[frame_index]  # 读取当前的时刻，用于遍历所有存在轨迹的时间段
-        print("正在检测第{}ms的画面...\n".format(time_ms))
 
         # 两两组合下所有两条轨迹组合遍历检测冲突
         for i, traj_i in enumerate(traj_list):
@@ -727,22 +616,16 @@ def run_conflict_detection(config):
                             # 判断当前时刻 轨迹 j 若存在轨迹点， 则继续
                             if not (traj_j.get_point_at_timestamp(time_ms) is None):
 
-                                # conflict_point, TTC, conflict_type = two_vehicle_conflict_detect(traj_i, traj_j, time_ms)
 
-                                # 修改冲突检测的函数，基于分离轴定理预测冲突（侧向、追尾、车头与车头）
-                                TTC, A_point, B_point = SAT_based_two_vehicle_conflicts_detect(5.0, \
-                                                                                               0.01, \
-                                                                                               traj_i, \
-                                                                                               traj_j, \
-                                                                                               time_ms)
+                                # 修改冲突检测的函数
+
+                                conflict_point, TTC, conflict_type = two_vehicle_conflict_detect(traj_i, traj_j, time_ms)
 
                                 # 若存在冲突（TTC 不为 9999）, 保存当前冲突到 list
-                                if TTC != 9999 and A_point.x != 0 and A_point.y != 0 and B_point.x != 0 and B_point.y != 0:
+                                if TTC != 9999 and conflict_point.x != 0 and conflict_point.y != 0 :
                                     # 把当前的冲突数据 写入 Conflict 类
-
-                                    # Conflict类重新设计成员变量
-                                    tmp_data = Conflict(time_ms, A_point.x, A_point.y, B_point.x, B_point.y, \
-                                                           TTC, traj_i.get_id(), traj_j.get_id())
+                                    tmp_data = Conflict(time_ms, conflict_point.x, conflict_point.y,\
+                                                           TTC, traj_i.get_id(), traj_j.get_id(), conflict_type)
                                     # 将冲突写入数组
                                     conflict_list.append(tmp_data)
                                     # 滴滴发出声音，报警有冲突
@@ -750,14 +633,13 @@ def run_conflict_detection(config):
                                     time.sleep(0.5)
                                     winsound.Beep(500, 500)
                                     print(time_ms,'ms时，轨迹',traj_i.get_id(),'与轨迹',traj_j.get_id(),\
-                                          '存在冲突！TTC为{}s！\n\n'.format(TTC))
-
+                                          '存在冲突！冲突类型为' + conflict_type + '\n\n\n')
 
         # 完成所有时刻检测
         if frame_index == (len(list_times_ms)-1):
             name_prefix = 'conflict_detect'
             # 完成所有时刻冲突检测后保存冲突list到csv
-            Conflict.write_conflict_panda_csv(output_dir, name_prefix, conflict_list)
+            Conflict.write_conflict_panda_csv(output_dir, name_prefix, conflict_list, list_times_ms)
             print('冲突检测完成！请查看文件')
             break
         # 当前时刻的冲突检测完成， 进行下一个时刻的检测
