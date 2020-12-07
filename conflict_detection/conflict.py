@@ -4,6 +4,7 @@ import os
 import collections
 import pandas as pd
 
+from traj_ext.box3D_fitting import box3D_object
 from traj_ext.postprocess_track.trajectory import TrajPoint
 from traj_ext.utils import cfgutil
 
@@ -204,56 +205,82 @@ class Conflict(object):
     def display_conflict_point_on_image(self, time_ms, cam_model, image_current_conflict, traj_list, TTC_label = True, \
                                         is_hd_map = False):
 
-        # 判断图像存在 并且 TTC不为负值，才继续进行下面的画图
-        if not (image_current_conflict is None) and (self._TTC > 0):
+        # 判断图像存在 并且 TTC为0.01表示已经相撞不需要预测，才继续进行下面的画图
+        if not (image_current_conflict is None) and (self._TTC > 0.01):
 
             # 依次画 冲突点 、 写TTC 、 画连线
-            # 画冲突点
-            pt_conflict_A = cam_model.project_points(np.array([(self._point_A_x, self._point_A_y, 0.0)])) # 将 平面坐标 转换为 原始镜头坐标
+            # 画冲突点 # 将 平面坐标 转换为 原始镜头坐标
+            pt_conflict_A = cam_model.project_points(np.array([(self._point_A_x, self._point_A_y, 0.0)]))
             pt_conflict_A = (int(pt_conflict_A[0]), int(pt_conflict_A[1]))
             pt_conflict_B = cam_model.project_points(np.array([(self._point_B_x, self._point_B_y, 0.0)]))
             pt_conflict_B = (int(pt_conflict_B[0]), int(pt_conflict_B[1]))
             # 冲突点 标为 红色 大实心圆
-            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict_A, 8, (0,0,255), -1)
-            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict_B, 8, (0, 0, 255), -1)
-            # 将3D边界框画在hd_map视角图中
-
-            # 添加判断 is_hd_map_view, if is_hd_map_view: do 画3D box（参考原visual中的方法）
-            # 待完成
-            if is_hd_map:
-                pass
-                # 将 四个点 计算投影点pt_X(X = 1234)，画在图像上的是投影后的点
-
-
+            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict_A, 4, (0,0,255), -1)
+            image_current_conflict = cv2.circle(image_current_conflict, pt_conflict_B, 4, (0, 0, 255), -1)
 
             # 两辆车与 冲突点的连线
             # 获取两条轨迹，并获取当前时刻的轨迹点
             traj_point_A = TrajPoint(0, 0, 0, 0, 0, 0)
             traj_point_B = TrajPoint(0, 0, 0, 0, 0, 0)
+            length_A, width_A, height_A = 0, 0, 0
+            length_B, width_B, height_B = 0, 0, 0
             for traj in traj_list:
 
                 if traj.get_id() == self._track_id_A:
                     traj_point_A = traj.get_point_at_timestamp(time_ms)
+                    length_A, width_A, height_A = traj.get_size()
 
                 if traj.get_id() == self._track_id_B:
                     traj_point_B = traj.get_point_at_timestamp(time_ms)
+                    length_B, width_B, height_B = traj.get_size()
 
             pt_pix_A = cam_model.project_points(np.array([(traj_point_A.x, traj_point_A.y, 0.0)]))
             pt_pix_A = (int(pt_pix_A[0]), int(pt_pix_A[1]))
             pt_pix_B = cam_model.project_points(np.array([(traj_point_B.x, traj_point_B.y, 0.0)]))
             pt_pix_B = (int(pt_pix_B[0]), int(pt_pix_B[1]))
             # 画的是 红色 宽度为2像素的 实线
-            image_current_conflict = cv2.line(image_current_conflict, pt_pix_A, pt_conflict_A, (0, 0, 255), 2)
-            image_current_conflict = cv2.line(image_current_conflict, pt_pix_B, pt_conflict_B, (0, 0, 255), 2)
+            image_current_conflict = cv2.line(image_current_conflict, pt_pix_A, pt_conflict_A, (0, 0, 255), 1)
+            image_current_conflict = cv2.line(image_current_conflict, pt_pix_B, pt_conflict_B, (0, 0, 255), 1)
             # 两辆相关车辆用 蓝色 的 实线 相连
             image_current_conflict = cv2.line(image_current_conflict, pt_pix_A, pt_pix_B, (255, 0, 0), 2)
+
+            # 将3D边界框画在hd_map视角图中
+
+            # 添加判断 is_hd_map_view, if is_hd_map_view: do 画3D box（参考原visual中的方法）
+            #if is_hd_map:
+            # 分别画A、B两车的3D边框到hd_map
+            box3D_A = box3D_object.Box3DObject(traj_point_A.psi_rad, \
+                                               self._point_A_x, \
+                                               self._point_A_y, \
+                                               0.0, \
+                                               length_A, \
+                                               width_A, \
+                                               height_A)
+            box3D_B = box3D_object.Box3DObject(traj_point_B.psi_rad, \
+                                               self._point_B_x, \
+                                               self._point_B_y, \
+                                               0.0, \
+                                               length_B, \
+                                               width_B, \
+                                               height_B)
+            # Display 3D box on image 画红色的3D边框
+            image_current_conflict = box3D_A.display_on_image(image_current_conflict, cam_model, (0, 0, 255))
+            image_current_conflict = box3D_B.display_on_image(image_current_conflict, cam_model, (0, 0, 255))
+            # 将 四个点 计算投影点pt_X(X = 1234)，画在图像上的是投影后的点
+
 
             # 标 TTC时间、冲突类型
             # 缩放大小0.8 蓝色，线宽 1
             if TTC_label :
 
+                if is_hd_map:
+                    pt_text = cam_model.project_points(np.array([(self._point_A_x + 5, self._point_A_y, 0.0)]))
+                else:
+                    pt_text = cam_model.project_points(np.array([(self._point_A_x, self._point_A_y - 5, 0.0)]))
+                pt_text = (int(pt_text[0]), int(pt_text[1]))
+
                 image_current_conflict = cv2.putText(image_current_conflict, 'TTC:'+ str(round(float(self._TTC), 2)) + 's',\
-                                                     pt_conflict, cv2.FONT_HERSHEY_PLAIN, 2.5, (255, 0, 0), 2)
+                                                     pt_text, cv2.FONT_HERSHEY_PLAIN, 2.5, (255, 0, 0), 2)
 
 
         return image_current_conflict

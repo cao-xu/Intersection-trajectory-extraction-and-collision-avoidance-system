@@ -433,18 +433,16 @@ def print_conflicts_result(conflict_list, Thread):
         Thread.signalCanvas("##########################################################################")
         Thread.signalCanvas("-----------------------------冲突检测结果-------------------------------")
         Thread.signalCanvas("##########################################################################")
-        Thread.signalCanvas("| times_ms | x坐标 | y坐标 | TTC | 冲突车辆_1_id | 冲突车辆_2_id | 冲突类型 |")
+        Thread.signalCanvas("|   时刻(ms)   |  TTC(s)  |  冲突车辆_1_ID(#)  |  冲突车辆_2_ID(#)  |")
+        # 修改输出属性
 
         for per_ms_conflict_list in conflict_list:
 
             for conflict_point in per_ms_conflict_list:
-                Thread.signalCanvas("| {} | {} | {} | {} | {} | {} | {} |".format(int(conflict_point.get_time_ms()), \
-                                                                               round(conflict_point.get_x(), 3), \
-                                                                               round(conflict_point.get_y(), 3), \
-                                                                               str(round(conflict_point.get_TTC(), 2)) + 's', \
-                                                                               int(conflict_point.get_track_id_A()), \
-                                                                               int(conflict_point.get_track_id_B()),\
-                                                                               str(conflict_point.get_conflict_type())))
+                Thread.signalCanvas("| __{}__ | __{}__ | __{}__ | __{}__ |".format(int(conflict_point.get_time_ms()), \
+                                                                   round(conflict_point.get_TTC(), 2), \
+                                                                   int(conflict_point.get_track_id_A()), \
+                                                                   int(conflict_point.get_track_id_B())))
         Thread.signalCanvas("##########################################################################")
 
 
@@ -622,11 +620,11 @@ def run_visualize_conflict_and_traj(config, Thread = None): # 模仿yolo_gpu_bug
                                                                                                       is_hd_map = False)
                             Thread.signalCanvas(str(time_ms) + "ms 时刻检测到冲突，TTC：{} s, 冲突车1的x坐标：{}，冲突车1的y坐标{}，"
                                                 "冲突车2的x坐标：{}，冲突车1的y坐标{}\n"\
-                                                .format(conflict_point.get_TTC(), \
-                                                        conflict_point.get_point_A_x(),\
-                                                        conflict_point.get_point_A_y(),\
-                                                        conflict_point.get_point_B_x(),\
-                                                        conflict_point.get_point_B_y()))
+                                                .format(round(float(conflict_point.get_TTC()), 2), \
+                                                        round(float(conflict_point.get_point_A_x()), 2),\
+                                                        round(float(conflict_point.get_point_A_y()), 2),\
+                                                        round(float(conflict_point.get_point_B_x()), 2),\
+                                                        round(float(conflict_point.get_point_B_y()), 2)))
 
             if hd_map_available:
 
