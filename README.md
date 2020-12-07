@@ -6,7 +6,7 @@
 
 
 **车辆冲突预测**
-![侧向冲突检测](conflict_prediect_05.gif)
+![冲突预测展示](conflict_prediect_05.gif)
 
 
 
