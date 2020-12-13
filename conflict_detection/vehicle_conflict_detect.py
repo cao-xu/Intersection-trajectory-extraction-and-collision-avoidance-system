@@ -52,7 +52,11 @@ def main(args_input):
 
 
 def compute_mid_coordinate(length, traj_point, direction):
-    t = length / (math.sqrt(traj_point.vx ** 2 + traj_point.vy ** 2) * 2)
+
+    if traj_point.vx == 0 and traj_point.vy == 0:
+        t = 1
+    else:
+        t = length / (math.sqrt(traj_point.vx ** 2 + traj_point.vy ** 2) * 2)
     if direction == 'front' :
         mid_x = traj_point.x + t * traj_point.vx
         mid_y = traj_point.y + t * traj_point.vy
@@ -581,14 +585,17 @@ def vehicle_bounding_point(point_x, point_y, length, width, vx, vy):
     point_3 = TrajPoint(0, 0, 0, vx, vy, 0)
     point_4 = TrajPoint(0, 0, 0, vx, vy, 0)
 
-    point_1.x, point_1.y, point_2.x, point_2.y = get_vehicle_front_or_rear_two_point(front_mid_point.x, front_mid_point.y,\
+    point_1.x, point_1.y, point_2.x, point_2.y = get_vehicle_front_or_rear_two_point(front_mid_point.x,\
+                                                                                     front_mid_point.y,\
                                                                                      width / 2, \
-                                                                                     center_point.x, center_point.y, \
+                                                                                     center_point.x, \
+                                                                                     center_point.y, \
                                                                                      math.sqrt((length / 2) ** 2 + (width / 2) ** 2))
-    point_3.x, point_3.y, point_4.x, point_4.y = get_vehicle_front_or_rear_two_point(rear_mid_point.x,
+    point_3.x, point_3.y, point_4.x, point_4.y = get_vehicle_front_or_rear_two_point(rear_mid_point.x,\
                                                                                      rear_mid_point.y, \
                                                                                      width / 2, \
-                                                                                     center_point.x, center_point.y, \
+                                                                                     center_point.x, \
+                                                                                     center_point.y, \
                                                                                      math.sqrt((length / 2) ** 2 + (width / 2) ** 2))
     # 判断在速度方向左边的分别是 2点 与 3点，右边的是 1点、4点
     ray_end_point_x = center_point.x + center_point.vx * 1
