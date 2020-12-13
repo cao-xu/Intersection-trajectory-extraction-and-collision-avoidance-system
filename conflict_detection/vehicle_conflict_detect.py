@@ -647,6 +647,11 @@ def SAT_based_two_vehicle_conflicts_detect(predict_time_length, time_step, traj_
     conflict_point_B = TrajPoint(0, 0, 0, traj_point_B.vx, traj_point_B.vy, 0)
     TTC = 9999
 
+    if traj_point_A.vx is None or traj_point_A.vy is None or traj_point_B.vx is None or traj_point_B.vy is None\
+            or traj_point_A.vx == 0 or traj_point_A.vy == 0 or traj_point_B.vx == 0 or traj_point_B.vy == 0:
+
+        return TTC, conflict_point_A, conflict_point_B
+
     # 对于每个时间步长，计算A、B两车的位置坐标点
     predict_time = time_step
     while predict_time <= predict_time_length:
