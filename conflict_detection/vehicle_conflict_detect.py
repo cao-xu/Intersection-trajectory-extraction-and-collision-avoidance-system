@@ -752,7 +752,6 @@ def run_conflict_detection(config):
                                 if TTC != 9999 and A_point.x != 0 and A_point.y != 0 and B_point.x != 0 and B_point.y != 0:
                                     # 把当前的冲突数据 写入 Conflict 类
 
-                                    # Conflict类重新设计成员变量
                                     tmp_data = Conflict(time_ms, A_point.x, A_point.y, B_point.x, B_point.y, \
                                                            TTC, traj_i.get_id(), traj_j.get_id())
                                     # 将冲突写入数组

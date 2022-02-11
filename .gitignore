@@ -1,0 +1,56 @@
+# Apple
+.DS_Store
+
+# Ignore build
+build
+
+#Virtual Env
+virtual_env/
+ve_*
+venv
+
+# Dataset
+dataset/
+test_output/
+
+#检测的数据
+mytest/
+
+#UI文件
+#UI/
+
+# Random
+latex
+
+# Python
+*.pyc
+**/videos
+**/outputs
+*.egg-info
+
+# Cfg file:
+*.ini
+
+# idea
+.idea/*
+
+#coco
+coco/*
+
+documentation
+
+#.gitignore
+#.gitmodules
+Z
+#camera_calib_manual_latlon.csv
+#images/
+#导出轨迹参数说明.txt
+#test01_batch.sh
+test_batch.sh
+README1.md
+#setup.py
+run_trajectory_extraction.sh
+traj_ext/object_det/mask_rcnn/Mask_RCNN
+#scripts/
+test_dataset/
+img

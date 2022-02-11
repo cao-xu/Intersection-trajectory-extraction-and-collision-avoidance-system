@@ -1,0 +1,11 @@
+ Args:
+            time_ms (TYPE): TimeStamp - milli-seconds
+            x (TYPE): Position X of the center of the vehicle on the ground - meters
+            y (TYPE): Position Y of the center of the vehicle on the ground - meters
+            vx (TYPE): Velocity X of the center of the vehicle on the ground - meters/s
+            vy (TYPE): Velocity Y of the center of the vehicle on the ground - meters/s
+            psi_rad (TYPE): Orientation psi of the center of the vehicle on the ground - radians
+        """
+其中x，y服从在“标定”过程中的选定的原点、正北方向为y轴正方向，正西方向为x轴正方向的坐标系
+vx、vy速度的坐标系与以上相同
+psi为航向（角）：弧度
