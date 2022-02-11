@@ -47,7 +47,7 @@ Z
 #导出轨迹参数说明.txt
 #test01_batch.sh
 test_batch.sh
-README1.md
+README2.md
 #setup.py
 run_trajectory_extraction.sh
 traj_ext/object_det/mask_rcnn/Mask_RCNN
